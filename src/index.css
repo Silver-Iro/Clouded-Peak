@@ -1,0 +1,10 @@
+
+@import "tailwindcss";
+
+.children-overflow-hidden > * {
+  @apply overflow-hidden whitespace-nowrap;
+}
+
+.children-color-yellow-700 > * {
+  @apply bg-amber-800 text-white;
+}
