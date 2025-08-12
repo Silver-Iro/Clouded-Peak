@@ -17,9 +17,9 @@ const MoveNodeCard = ({data,id,selected}:Node<Record<string,any>>) =>{
         <X size={20} onClick={()=> removeNode(id)} className='absolute right-1 top-1'></X>
       </div>
       <div className="relative flex-1 grid grid-cols-2 grid-rows-3 children-overflow-hidden whitespace-nowrap text-ellipsi">
-        <p className="text-left ml-2">{data.startup}</p>
+        <p className="text-left ml-2">{`${data.startup}\u00A0\u00A0( ${data.target} )`}</p>
         <p className="text-right mr-2">{data.on_hit}</p>
-        <p className="text-left ml-2">&ensp; &gt;</p>
+        <p className="text-left ml-2">&ensp; &gt; {data.crush}</p>
         <p className="text-right mr-2">{data.on_block}</p>
         <p className="text-left ml-2">{data.name}</p>
         <p className="text-right mr-2">{`Chlng for(${data.on_ch})`}</p>

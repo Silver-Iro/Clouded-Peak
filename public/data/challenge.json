@@ -19,7 +19,7 @@
     "video": ""
   },
   {
-    "crush": "pc8~",
+    "crush": "ra8~",
     "damage": "55+",
     "gif": "",
     "id": "Xiaoyu-R.df+1+2",
@@ -63,7 +63,7 @@
     "id": "Xiaoyu-1+3",
     "image": "",
     "input": "1+3",
-    "name": "Jade",
+    "name": "Jade Grab",
     "notes": "* Homing\n* Throw break 1 or 2",
     "on_block": "-6",
     "on_ch": "",
@@ -76,13 +76,13 @@
     "video": "File:t8-p2-xiaoyu-1+3.mp4"
   },
     {
-    "crush": "",
+    "crush": "cs0",
     "damage": "8",
     "gif": "",
     "id": "Xiaoyu-d+2",
     "image": "",
     "input": "d+2",
-    "name": "",
+    "name": "Xiaoyu-djab",
     "notes": "* Alternate input FC.2",
     "on_block": "-4",
     "on_ch": "",
@@ -90,6 +90,25 @@
     "recovery": "FC",
     "short_notes": "* Alternate input FC.2",
     "startup": "i11",
+    "tags": "",
+    "target": "s",
+    "video": ""
+  },
+     {
+    "crush": "cs0",
+    "damage": "8",
+    "gif": "",
+    "id": "Xiaoyu-d+2",
+    "image": "",
+    "input": "d+2",
+    "name": "djab",
+    "notes": "* Alternate input FC.2",
+    "on_block": "-4",
+    "on_ch": "",
+    "on_hit": "+7",
+    "recovery": "FC",
+    "short_notes": "* Alternate input FC.2",
+    "startup": "i10",
     "tags": "",
     "target": "s",
     "video": ""
@@ -112,6 +131,25 @@
     "tags": "js9~",
     "target": "m",
     "video": "File:t8-p2-xiaoyu-uf+3.mp4"
+  },
+   {
+    "crush": "cs0",
+    "damage": "23",
+    "gif": "",
+    "id": "Xiaoyu-df+3",
+    "image": "",
+    "input": "df+3",
+    "name": "Phoenix Tail",
+    "notes": "* Homing\n* Tornado\n* Cancel into BT with B\n* On hit, transition to AOP with D\n* [[Snake_Edge|Snake Edge]]",
+    "on_block": "-23",
+    "on_ch": "",
+    "on_hit": "+71a (+55)",
+    "recovery": "",
+    "short_notes": "* Cancel into BT with B\n* On hit, transition to AOP with D\n* [[Snake_Edge|Snake Edge]]",
+    "startup": "i29",
+    "tags": "hom trn",
+    "target": "l",
+    "video": "File:t8-p2-xiaoyu-df+3.mp4"
   }
 
 

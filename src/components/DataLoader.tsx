@@ -1,3 +1,4 @@
+import { Target } from "lucide-react";
 import { useState,useEffect, type JSX } from "react";
 
  type MoveList = {
@@ -20,16 +21,35 @@ const DataLoader = ({ children }: DataLoaderProps) => {
         return isNaN(num) ? 0 : num;
         };
 
+        // split and clean startup value
         let startupValue = typeof move.startup === "string"
         ? move.startup.split(",")[0].trim().replace("i", "")
         : move.startup;
 
+        // handle cases where ducking/FC moves recover FC but not written in dataset.
+        if ( move.target === "l" && move.crush==="" && move.recovery==="FC"){
+            move.crush = "cs0~"
+        }
+        
+        // prepare values for crushing calculations
+        let crushTarget = ""
+        let crushValue = ""
+        if (move.crush.length>=2){
+            const split =move.crush.split("~")[0].trim()
+            crushTarget = split.slice(0,2);
+            crushValue = split.slice(2) || 0;
+        }
+        
+        
         if (move.on_ch === "") move.on_ch = move.on_hit;
 
         return {
         moveNumber: moveNum + 1,
         data: {
             ...move,
+            crushTarget,
+            crushValue,
+            moveTarget: move.target.slice(0,1).toLowerCase(),
             startupValue: cleanNumeric(startupValue),
             on_hitValue: cleanNumeric(move.on_hit),
             on_blockValue: cleanNumeric(move.on_block),
@@ -51,10 +71,12 @@ const DataLoader = ({ children }: DataLoaderProps) => {
             setFrameData(frameList);
             setChallengeData(challengeList);
             setLoading(false);
+            console.log(frameList);
         })
         .catch((err) => {
             console.error("Error loading data:", err);
         });
+        
     }, []);
 
     if (loading) {

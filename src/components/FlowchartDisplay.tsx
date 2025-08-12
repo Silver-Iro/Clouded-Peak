@@ -9,7 +9,7 @@ import ChallengeNodeCard from './ChallengeNodeCard';
 
 import '@xyflow/react/dist/style.css';
 import CustomControls from './CustomControls';
-import {AdvantageEdge} from './CustomEdges';
+import {AdvantageEdge,ChallengeEdge} from './CustomEdges';
 
 
 type FlowchartDisplayProps = {
@@ -51,6 +51,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
 
   const edgeTypes ={
     adv:AdvantageEdge,
+    chall:ChallengeEdge,
   }
     const rfStyle = {
     backgroundColor: '#101010',
@@ -96,7 +97,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
           origin: [0.5, 0.0],
         };
         
-        const {newAdvEdge,filteredEdges} = calculateNewAdvEdge(connectionState.fromNode?.id as string,id,connectionState.fromHandle?.id as string,"in");
+        const {newAdvEdge,filteredEdges} = calculateNewAdvEdge(connectionState.fromNode?.id as string,id,connectionState.fromHandle?.id as string,"in","chall");
         
         setNodes((nds) => nds.concat(newNode));
         // setEdges((eds) =>
@@ -152,7 +153,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
     setMatchedMove(num);
   }
 
-  const calculateNewAdvEdge = (source:string,target:string,sourceHandle:string,targetHandle:string) => {
+  const calculateNewAdvEdge = (source:string,target:string,sourceHandle:string,targetHandle:string,type = 'adv') => {
     const newEdgeID:string = `${source}-${target}`
       // Filter existing edges between same 2 Nodes
       const filteredEdges = getEdges().filter<Edge>(edg => edg.id !== newEdgeID)
@@ -163,7 +164,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
           target:target,
           sourceHandle:sourceHandle,
           targetHandle:targetHandle,
-          type: 'adv',
+          type: type,
           label: 'dynamic', // use for generated nodes
           animated: true,
           style: { stroke: '#888' },
