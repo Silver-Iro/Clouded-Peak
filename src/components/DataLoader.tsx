@@ -60,10 +60,10 @@ const DataLoader = ({ children }: DataLoaderProps) => {
 
     useEffect(() => {
         Promise.all([
-        fetch("/data/xiaoyu.json")
+        fetch(`${import.meta.env.BASE_URL}data/xiaoyu.json`)
             .then((res) => res.json())
             .then((json) => json.map((move: any, i: number) => cleanMovesetByMove(move, i))),
-        fetch("/data/challenge.json")
+        fetch(`${import.meta.env.BASE_URL}data/challenge.json`)
             .then((res) => res.json())
             .then((json) => json.map((move: any, i: number) => cleanMovesetByMove(move, i)))
         ])

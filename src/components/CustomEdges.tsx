@@ -38,7 +38,9 @@ export function AdvantageEdge({
     const block = parseNum(sourceNode?.data?.on_blockValue);
     const ch = parseNum(sourceNode?.data?.on_chValue);
     ;
-
+    if (sourceNode?.type==="challengeCard"){
+      return startupFrames = startupFrames - sourceNode?.data?.outcomeFrames;
+    }
     
     if (sourceHandleId === 'hit') {
       return startupFrames - hit;
