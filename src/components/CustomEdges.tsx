@@ -3,6 +3,7 @@ import { type Node, EdgeLabelRenderer, getStraightPath, useStore } from '@xyflow
 import { X } from 'lucide-react';
 import { useReactFlowUtils } from './hooks/useCustomReactFlowUtils';
 import { useEffect, useRef, useState } from 'react';
+import {getEffectiveStartup} from '../utils/customUtils';
 
 export function AdvantageEdge({
   id,
@@ -15,6 +16,7 @@ export function AdvantageEdge({
   targetX,
   targetY
 }: EdgeProps) {
+  const { setNodes } = useReactFlow();
   const { removeEdge, } = useReactFlowUtils();
   const sourceNode = useStore((s) => s.nodeLookup.get(source));
   const targetNode = useStore((s) => s.nodeLookup.get(target));
@@ -26,6 +28,8 @@ export function AdvantageEdge({
     const num = parseInt(String(value));
     return Number.isFinite(num) ? num : 0;
   };
+
+  
 
   // Calculate the new advantage based on source handle
   const calculateNewAdvantage = () => {
@@ -58,6 +62,25 @@ export function AdvantageEdge({
     targetX,
     targetY,
   });
+  
+  // useEffect(() => {
+  //   if (!targetNode) return;
+
+  //   setNodes((nds) =>
+  //     nds.map((n) =>
+  //       n.id === target
+  //         ? {
+  //             ...n,
+  //             data: {
+  //               ...n.data,
+  //               effectiveStartup: newStartup, // store effective startup here
+  //             },
+  //           }
+  //         : n
+  //     )
+  //   );
+  // }, [newStartup]);
+
 
   return (
     <>
@@ -76,11 +99,11 @@ export function AdvantageEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className={`nodrag nopan text-white bg-yellow-900 w-20 h-auto text-center rounded-md ${
+          className={`p-1 nodrag nopan text-white bg-yellow-900 w-20 h-auto text-sm font-sans text-left pl-2 rounded-md ${
             selected ? 'border-2 border-white' : ''
           }`}
         >
-          ST: {newStartup}
+          Startup frames: {newStartup>0?newStartup:0}
           <X
             size={16}
             onClick={() => removeEdge(id)}
@@ -94,9 +117,6 @@ export function AdvantageEdge({
 }
 
 
-
-
-
 export function ChallengeEdge({
   id,
   source,
@@ -108,67 +128,74 @@ export function ChallengeEdge({
   targetX,
   targetY
 }: EdgeProps) {
-  const {getEdges} = useReactFlow()
+  const {setNodes,getNode, getEdges} = useReactFlow()
   const { removeEdge } = useReactFlowUtils();
 
   // Subscribe to live node objects so this component re-renders on node data changes
-  // nodeInternals was renamed to nodeLookup in React Flow v12
   const sourceNode = useStore((s) => s.nodeLookup.get(source));
   const targetNode = useStore((s) => s.nodeLookup.get(target));
   console.log(sourceNode, " with ", targetNode)
-
-  let advantage = 0;
-  let pastAdvantage = 0;
   
-
-  // re calculate advantage of previous mode to judge the interaction.
-  const advantageEdges = getEdges().filter(edge=>(edge.target===source));
-  if (advantageEdges.length>0){
-    const edge=advantageEdges.at(-1);
-    const pastHandleID = edge?.sourceHandle;
-    const sourceNode = useStore((s) => s.nodeLookup.get(edge.source));
-    const hit = parseInt(sourceNode?.data?.on_hitValue);
-    const block = parseInt(sourceNode?.data?.on_blockValue);
-    const ch = parseInt(sourceNode?.data?.on_chValue);
-    ;
-    if (pastHandleID === 'hit') {
-      pastAdvantage = hit;
-    } else if (pastHandleID === 'block') {
-      pastAdvantage = block;
-    } else if (pastHandleID === 'chall') {
-      pastAdvantage = ch};
-  }
-
   // Helper to safely parse numeric values
-  const parseNum = (value: any): number => {
+  const parseNum = (value: any) => {
     const num = parseInt(String(value));
     return Number.isFinite(num) ? num : 0;
   };
 
+  // find effective startup
+  const effectiveStartup = getEffectiveStartup(sourceNode, getEdges(), getNode);
+  const sourceStartup = parseNum(effectiveStartup ?? sourceNode?.data?.startupValue);
+  // target doesn't have effective startup but let it be for now...
+  const targetStartup = parseNum(targetNode?.data?.effectiveStartup ?? targetNode?.data?.startupValue);
+
+  // re calculate advantage of previous mode to judge the interaction.
+  // const advantageEdges = useStore(s =>
+  //   Array.from(s.edgeLookup.values()).filter(e => e.target === source && e.type === 'adv')
+  // );
+  // const lastAdvEdge = advantageEdges.at(-1); // last advantage edge to this node
+
+  
+
+  let pastAdvantage = 0;
+//   if (lastAdvEdge) {
+//   const lastSourceNode = useStore(s => s.nodeLookup.get(lastAdvEdge.source));
+//   const hit = parseInt(lastSourceNode?.data?.on_hitValue) || 0;
+//   const block = parseInt(lastSourceNode?.data?.on_blockValue) || 0;
+//   const ch = parseInt(lastSourceNode?.data?.on_chValue) || 0;
+  
+//   pastAdvantage = lastAdvEdge.sourceHandle === 'hit' ? hit
+//                  : lastAdvEdge.sourceHandle === 'block' ? block
+//                  : lastAdvEdge.sourceHandle === 'chall' ? ch
+//                  : 0;
+// }
 
   // we already established that move is faster than crusher
   const moveACrushedByB = (move,crusher) => {
-    if (crusher.crush ===""){
+    console.log(crusher.crush)
+    if (!crusher?.crush){
       return false
     }
-    let startupFrames = parseNum(move.startupValue)-pastAdvantage;
+    let moveStartup = parseNum(move.startupValue);
     const target = move.moveTarget;
-    const crusherFrames = parseNum(crusher.startupValue)
+    const crusherStartup = parseNum(crusher.startupValue)
     const crushValue = parseNum(crusher.crushValue);
     const crushType = crusher.crushTarget;
   
     // const hit = parseNum(sourceNode?.data?.on_hitValue);
     // const block = parseNum(sourceNode?.data?.on_blockValue);
     // const ch = parseNum(sourceNode?.data?.on_chValue);
+
+    // check if move A target loses to move B crush state and the startupframes are slower than crush start.
     const losesTo:Record<string,string[]> = {
       "h":["cs","ps","pc","ra"],
       "m":["ps","pc","ra"],
       "s":["js","pc","ra"],
       "l":["js","ra"],
+      "t":["cs","js","ra"],
       "":[],
     };
     console.log(target," and ", crushType);
-    if (losesTo[target as string]?.includes(crushType as string) && startupFrames>crushValue){
+    if (losesTo[target as string]?.includes(crushType as string) && moveStartup>crushValue){
           console.log("included")
           return true;
         } else return false;
@@ -178,29 +205,63 @@ export function ChallengeEdge({
 
 
   // Calculate the new advantage based on source handle
-  const ChallengeWon = ():boolean => {
+  const didSourceWin = ():boolean => {
+    if (!sourceNode || !targetNode) return false;
     if (moveACrushedByB(sourceNode?.data,targetNode?.data)) {
       console.log("source got ceushed by target")
       return false
     } else if (moveACrushedByB(targetNode?.data,sourceNode?.data)) {
       console.log("Target got ceushed by source")
       return true
-    } else if (sourceNode?.data.startupValue<targetNode?.data.startupValue){
+    } else if (sourceStartup < targetStartup) {
+      console.log("No crushing happened, Won by frames")
       return true
       }
-
+    console.log("No crushing happened, Lost by frames")
+    console.log(sourceStartup)
     return false
     }
   
-  let outcome = "N/A";
-  let strokeColor = "#ababab";
+  const outcome = didSourceWin() ? "Won" : "Lost";
+  console.log(didSourceWin());
 
-  if (ChallengeWon){
-    outcome = ChallengeWon()?"Won":"Lost";
-    strokeColor = ChallengeWon()?'#4ade80': "#ff5151";
 
-  }
+  // let strokeColor = "#ababab";
 
+  // if (ChallengeWon){
+  //   outcome = ChallengeWon()?"Won":"Lost";
+  //   strokeColor = ChallengeWon()?'#4ade80': "#ff5151";
+
+  // }
+
+    // Push outcome into target node data
+  useEffect(() => {
+    if (!targetNode) return;
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id !== target) return n;
+
+        const newData = {
+          ...n.data,
+          challengeOutcome: outcome,
+          outcomeFrames: didSourceWin()
+            ? parseNum(sourceNode?.data?.on_chValue)
+            : parseNum(targetNode?.data?.on_chValue),
+        };
+
+        // prevent infinite loop: skip update if no change
+        if (
+          n.data.challengeOutcome === newData.challengeOutcome &&
+          n.data.outcomeFrames === newData.outcomeFrames
+        ) {
+          return n;
+        }
+
+        return { ...n, data: newData };
+      })
+    );
+  }, [outcome, sourceStartup, targetStartup,]);
   // Calculate label position
   const [edgePath, labelX, labelY] = getStraightPath({
     sourceX,
@@ -208,6 +269,7 @@ export function ChallengeEdge({
     targetX,
     targetY,
   });
+   const strokeColor = outcome === "Won" ? "#4ade80" : "#ff5151";
 
   return (
     <>
@@ -226,10 +288,10 @@ export function ChallengeEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className={`nodrag nopan pl-2 text-left text-white bg-yellow-900 w-22 h-auto rounded-md ${
+          className={`p-1 nodrag nopan pl-2 text-left text-white bg-yellow-900 w-24 h-auto text-sm font-sans text-left pl-2 rounded-md ${
             selected ? 'border-2 border-white' : ''}`
           }>
-           {outcome} @{pastAdvantage<0?"":"+"}{pastAdvantage}
+           challenge <b>{outcome} </b>with effective startup of <br /><b>{sourceStartup } frames</b>.
           <X size={16}
             onClick={() => removeEdge(id)}
             className="absolute right-1 top-0.5 cursor-pointer"
@@ -238,4 +300,6 @@ export function ChallengeEdge({
       </EdgeLabelRenderer>
     </>
   );
+
+  // END of Challenge Edge.
 }

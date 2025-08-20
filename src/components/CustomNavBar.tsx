@@ -14,8 +14,10 @@ const CustomNavBar = () => {
             </div>
           ))}
         </div>
-        <div className="fixed right-4 top-4 mt-auto mb-auto h-10 w-10 border-stone-800 text-white border-2 rounded-full flex justify-center hover:text-black hover:bg-stone-200 hover:border-2 hover:rounded-full ">
-          <button className=""><Sun size={20} onClick={()=>alert("Bruh.. \ngive your eyes some love.")}/></button>
+        <div className="fixed right-4 bottom-4 mt-auto mb-auto h-10 w-10 border-stone-800 text-white border-2 rounded-full flex justify-center hover:text-black hover:bg-stone-200 hover:border-2 hover:rounded-full "
+        onClick={()=>alert("Bruh.. \nGive your eyes some love.")}
+        >
+          <button className=""><Sun size={20} /></button>
         </div>
       </nav>
       <div className="ml-auto mr-auto max-w-256 h-1 rounded-2xl bg-stone-800"></div>

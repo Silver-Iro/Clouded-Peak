@@ -1,13 +1,58 @@
 // import { useCallback } from "react";
 import { X } from 'lucide-react';
 import { CustomHandleOnHit, CustomHandleOnBlock, CustomHandleOnChallenge, CustomHandleIn } from './CustomHandles';
-import { Position,type Node, } from "@xyflow/react";
+import { Position,type Node,useReactFlow , useStore} from "@xyflow/react";
 import { useReactFlowUtils } from './hooks/useCustomReactFlowUtils';
+import { useMemo,useEffect } from 'react';
 
 
 
 const MoveNodeCard = ({data,id,selected}:Node<Record<string,any>>) =>{
-  const {removeNode}= useReactFlowUtils()
+
+  const { getEdges,setNodes } = useReactFlow();
+  const { removeNode } = useReactFlowUtils();
+  const nodeLookup = useStore((s) => s.nodeLookup);
+
+  const edges = getEdges();
+  const incomingEdges = useMemo(() => edges.filter(e => e.target === id), [edges, id]);
+
+  const parseNum = (value: any) => {
+    const num = parseInt(String(value));
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  // Compute effective startup based on last incoming edge
+  const effectiveStartup = useMemo(() => {
+    if (!incomingEdges.length) return parseNum(data.startupValue);
+
+    const lastEdge = incomingEdges[incomingEdges.length - 1];
+    const sourceNodeData = lastEdge.source ? nodeLookup.get(lastEdge.source)?.data : null;
+
+    const startupFrames = parseNum(data.startupValue);
+    const hit = parseNum(sourceNodeData?.on_hitValue);
+    const block = parseNum(sourceNodeData?.on_blockValue);
+    const ch = parseNum(sourceNodeData?.on_chValue);
+
+    if (lastEdge.sourceHandle === 'hit') return startupFrames - hit;
+    if (lastEdge.sourceHandle === 'block') return startupFrames - block;
+    if (lastEdge.sourceHandle === 'chall') return startupFrames - ch;
+
+    return startupFrames;
+  }, [incomingEdges, data, nodeLookup]);
+
+  useEffect(() => {
+    setNodes(nds =>
+      nds.map(n => n.id === id ? { ...n, data: { ...n.data, effectiveStartup } } : n)
+    );
+  }, [effectiveStartup, id, setNodes]);
+  // Optional: store effectiveStartup in node data
+  // So ChallengeEdge or other components can access it
+  // useMemo(() => {
+  //   setNodes(nds =>
+  //     nds.map(n => n.id === id ? { ...n, data: { ...n.data, effectiveStartup } } : n)
+  //   );
+  // }, [effectiveStartup, id, setNodes]);
+
 
   return (
     <div className={`flex flex-col text-updater-node h-26 w-48 text-white bg-stone-800  border-2 rounded-lg border-stone-700
@@ -16,13 +61,13 @@ const MoveNodeCard = ({data,id,selected}:Node<Record<string,any>>) =>{
         <p className="text-lg text-center m-auto">{data.input}</p>
         <X size={20} onClick={()=> removeNode(id)} className='absolute right-1 top-1'></X>
       </div>
-      <div className="relative flex-1 grid grid-cols-2 grid-rows-3 children-overflow-hidden whitespace-nowrap text-ellipsi">
+      <div className="relative flex-1 grid grid-cols-2 grid-rows-3 children-overflow-hidden whitespace-nowrap font-sans font-medium text-ellipsi">
         <p className="text-left ml-2">{`${data.startup}\u00A0\u00A0( ${data.target} )`}</p>
         <p className="text-right mr-2">{data.on_hit}</p>
-        <p className="text-left ml-2">&ensp; &gt; {data.crush}</p>
+        <p className="text-left ml-2">{data.crush&&`Crush: ${data.crush}`}</p>
         <p className="text-right mr-2">{data.on_block}</p>
-        <p className="text-left ml-2">{data.name}</p>
-        <p className="text-right mr-2">{`Chlng for(${data.on_ch})`}</p>
+        <p className="text-left ml-2 mr-2">{data.name}</p>
+        <p className="text-right mr-2">{`CH?(${data.on_ch})`}</p>
       </div>
       <div className="">
         <CustomHandleOnHit type="source" position={Position.Right} id="hit"/>

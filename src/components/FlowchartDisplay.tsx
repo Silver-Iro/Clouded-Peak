@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
+import Fuse from 'fuse.js';
 import { type Node,useReactFlow,ReactFlow, Background, applyEdgeChanges, applyNodeChanges, addEdge,type Connection, type Edge, type ConnectionState,} from '@xyflow/react';
 import MoveNodeCard from './MoveNodeCard';
 import ChallengeNodeCard from './ChallengeNodeCard';
+import { invertNumericValues } from '../utils/customUtils';
 
 
 
@@ -10,6 +12,7 @@ import ChallengeNodeCard from './ChallengeNodeCard';
 import '@xyflow/react/dist/style.css';
 import CustomControls from './CustomControls';
 import {AdvantageEdge,ChallengeEdge} from './CustomEdges';
+import { MoveNumAdd, MoveSearchAdd } from './CustomOverlays';
 
 
 type FlowchartDisplayProps = {
@@ -20,11 +23,34 @@ type FlowchartDisplayProps = {
 const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) => {
 
 
-  const [matchedMove, setMatchedMove] = useState<number>(7);
+  const [matchedMove, setMatchedMove] = useState<number>(27);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  const {getEdges,screenToFlowPosition} = useReactFlow<Node,Edge>()
+  const {getEdges,screenToFlowPosition} = useReactFlow<Node,Edge>();
+
+  // fuzzy search helper.
+  const normalizeMove = (str: string) =>{
+    return str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  }
+
+  // fuse with normalized names to allow loose searching.
+  const fuse = useMemo(() => {
+    const normalizedData = frameData.map((move) => ({
+      ...move,
+      normalizedName: normalizeMove(move.data.input),
+    }));
+    return new Fuse(normalizedData, {
+      keys: ['normalizedName'],
+      threshold: 0.3,
+      ignoreLocation: true,
+      distance: 100,  
+      minMatchCharLength: 1,
+    });
+  }, [frameData]);
 
   const id = useRef(0);
   const getID = () => `${id.current++}`;
@@ -33,7 +59,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
   const updateNodeData = useCallback((nodeId: string, newData: any) => {
       setNodes((nds) =>
         nds.map((node) =>
-          node.id === nodeId ? { ...node, data: newData.data} : node
+          node.id === nodeId ? { ...node, data:{...node.data, ...newData.data}} : node
         )
       );
     },[])
@@ -75,6 +101,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
         setEdges(() => addEdge(newAdvEdge, filteredEdges));
     },[setEdges]);
 
+  
   // Add challenge Node on edge drop over blank area
   const onConnectEnd = useCallback(
     (event:any, connectionState:ConnectionState) => {
@@ -92,8 +119,10 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
             y: clientY,
           }),
           type: "challengeCard",
-          // data: { label: `Node ${id}` },
-          data: challengeData[0].data,
+          data:{ ...challengeData[5].data,
+          on_ch: invertNumericValues(challengeData[5].data.on_ch) || 0,
+          on_chValue: invertNumericValues(challengeData[5].data.on_chValue) || 0,
+          },
           origin: [0.5, 0.0],
         };
         
@@ -113,32 +142,23 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
     // adding new nodes
   const reactFlowInstance = useReactFlow();
 
-  const addSelectedNode = (e:any,num:number) => {
-    e.preventDefault()
-    console.log("adding move no:",num)
-    if (!num){
-      alert("invalid move selection")
-      return
+  const addSelectedMoveByNumber = (e:React.FormEvent,num:number) => {
+    e.preventDefault();
+    if (!num) {
+      alert("invalid move selection");
+      return;
     }
-    
-    setNodes((nodes) =>
-      nodes.map((node) => ({
-        ...node,
-        selected: false,
-      }))
-    );
 
-    const newNode = {
-      id : getID(),
-      type:"moveCard",
-      position: {
-        x: Math.random() * 500,
-        y: Math.random() * 500,
+    setNodes((prev) => [
+      ...prev.map((node) => ({ ...node, selected: false })), // deselect existing
+      {
+        id: getID(),
+        type: "moveCard",
+        position: { x: Math.random() * 500, y: Math.random() * 500 },
+        selected: true,
+        data: frameData?.[num]?.data,
       },
-      selected:true,
-      data: frameData?.[num]?.data,
-    };
-    reactFlowInstance.addNodes(newNode);
+    ]);
   };
 
   const validateMatchingMove = (e:any) => {
@@ -151,6 +171,44 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
       num=max;
     } else num=num
     setMatchedMove(num);
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+
+    if (!term.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const normalizedTerm = normalizeMove(term);
+    const results = fuse.search(normalizedTerm).map((r) => r.item)
+
+    setSearchResults(results.slice(0, 10));
+  };
+
+  
+  const addSelectedMoveBySearch = (move:any) => {
+    if (!move) return;
+    setNodes((prev) => [
+    ...prev.map((n) => ({ ...n, selected: false })), // deselect others
+    {
+      id: getID(),
+      type: 'moveCard',
+      position: { x: Math.random() * 500, y: Math.random() * 500 },
+      selected: true,
+      data: move.data,
+    },
+  ]);
+
+  setSearchTerm('');
+  setSearchResults([]);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchResults.length) return;
+    addSelectedMoveBySearch(searchResults[0]); // take top result
   }
 
   const calculateNewAdvEdge = (source:string,target:string,sourceHandle:string,targetHandle:string,type = 'adv') => {
@@ -172,6 +230,8 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
         return {newAdvEdge,filteredEdges}
   }
 
+  
+
   return (
     <div className='ml-auto mr-auto mt-2 justify-center  rounded-[1rem] font-[Bebas_Neue] overflow-hidden' style={{ height: '80%', width: '80%' }}>
       <p></p>
@@ -192,19 +252,21 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
       proOptions={{hideAttribution: true}}
       >
         <Background color="#777766"/>
-        <div className=' w-48 flex justify-evenly absolute top-4 left-4 z-20 px-2 py-2 rounded bg-stone-800'>
-          <form onSubmit={(e)=>addSelectedNode(e,matchedMove)}>
-            <button type="submit"
-            className="w-30 h-8  rounded-md bg-yellow-700 hover:bg-amber-600 text-blac cursor-pointer text-white font-thin text-lg">
-              Add Move
-            </button>
-            <input type="number" min={1} max={frameData?.length-1 || 1} 
-            onChange={(e) =>{validateMatchingMove(e)}} value={matchedMove}
-            className='w-12 bg-stone-700 text-white rounded-md pl-2' />
-          </form>
-        </div>
-        
-      
+        <MoveNumAdd 
+          matchedMove={matchedMove}
+          frameData={frameData}
+          onAddMove={addSelectedMoveByNumber}
+          onValidateMove={validateMatchingMove}
+        />
+
+        <MoveSearchAdd 
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+          results={searchResults}
+          onSelectResult={addSelectedMoveBySearch}
+        />
+
         <CustomControls />
       </ReactFlow>
 
