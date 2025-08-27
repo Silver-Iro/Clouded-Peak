@@ -233,7 +233,7 @@ const FlowchartDisplay = ({ frameData, challengeData }: FlowchartDisplayProps) =
   
 
   return (
-    <div className='ml-auto mr-auto mt-2 justify-center  rounded-[1rem] font-[Bebas_Neue] overflow-hidden' style={{ height: '80%', width: '80%' }}>
+    <div className='ml-auto mr-auto mt-2 justify-center  rounded-[1rem] font-[Bebas_Neue] overflow-hidden' style={{ height: '90%', width: '90%' }}>
       <p></p>
       <ReactFlow
       nodes={nodes}

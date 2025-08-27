@@ -1,4 +1,5 @@
 import { Sun } from "lucide-react"
+import {Link} from 'react-router-dom'
 
 const CustomNavBar = () => {
   return (
@@ -7,10 +8,10 @@ const CustomNavBar = () => {
         <div className=" max-w-256  flex grow justify-stretch ">
           {["Flow Planner", "Documentation", "Contact"].map((item) => (
             <div key={item} className={`flex w-full h-16 rounded-lg hover:bg-stone-700 hover:pb-1 ${item==="Flow Planner"? "border-b-2 pb-1 rounded-b-none border-yellow-700 bg-neutral-800":""}`}>
-              <a href={`/${item.toLowerCase().replace(" ", "")}`}
+              <Link to={`/${item.toLowerCase().replace(" ", "")}`}
                 className={` w-full m-auto text-white text-center  text-2xl `}>
                 {item}
-              </a>
+              </Link>
             </div>
           ))}
         </div>
